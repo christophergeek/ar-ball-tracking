@@ -8,8 +8,11 @@ using System;
 public class TapToPlace : MonoBehaviour
 {
     public GameObject placementIndicator;
+    public GameObject objectToPlace;
 
     private ARSessionOrigin arOrigin;
+    private ARSession arSession;
+
     private Pose placementPose;
     private bool placementPoseValid = false;
 
@@ -17,6 +20,7 @@ public class TapToPlace : MonoBehaviour
     void Start()
     {
         arOrigin = FindObjectOfType<ARSessionOrigin>();
+        arSession = FindObjectOfType<ARSession>();
     }
 
     // Update is called once per frame
@@ -24,6 +28,16 @@ public class TapToPlace : MonoBehaviour
     {
         UpdatePlacementPose();
         UpdatePlacementIndicator();
+
+        if(placementPoseValid && Input.touchCount>0 && Input.GetTouch(0).phase == TouchPhase.Began)
+        {
+            PlaceObject();
+        }
+    }
+
+    private void PlaceObject()
+    {
+        Instantiate(objectToPlace, placementPose.position, placementPose.rotation);
     }
 
     private void UpdatePlacementIndicator()
@@ -49,6 +63,13 @@ public class TapToPlace : MonoBehaviour
         if (placementPoseValid)
         {
             placementPose = hits[0].pose;
+
+            var cameraForward = Camera.current.transform.up;
+            var planeForward = hits[0].pose.up;
+
+            var dotProduct = Vector3.Dot(cameraForward, planeForward);
+            var cameraBearing = (cameraForward - dotProduct*planeForward).normalized;
+            placementPose.rotation = Quaternion.LookRotation(cameraBearing, planeForward);
         }
     }
 }
