@@ -8,13 +8,15 @@ using System;
 public class TapToPlace : MonoBehaviour
 {
     public GameObject placementIndicator;
-    public GameObject objectToPlace;
+    public GameObject targetToPlace;
+    public Rigidbody objectToInstantiate;
 
     private ARSessionOrigin arOrigin;
     private ARSession arSession;
 
     private Pose placementPose;
     private bool placementPoseValid = false;
+    private bool targetPlaced = false;
 
     // Start is called before the first frame update
     void Start()
@@ -26,18 +28,48 @@ public class TapToPlace : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        UpdatePlacementPose();
-        UpdatePlacementIndicator();
-
-        if(placementPoseValid && Input.touchCount>0 && Input.GetTouch(0).phase == TouchPhase.Began)
+        if (!targetPlaced)
         {
-            PlaceObject();
+            UpdatePlacementPose();
+            UpdatePlacementIndicator();
+
+            if (placementPoseValid && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+            {
+                PlaceTarget();
+            }
+        }
+        else if (targetPlaced)
+        {
+            if (Input.touchCount > 0)
+            {
+                float startTouchTime, endTouchTime;
+                startTouchTime = endTouchTime = 0.0f;
+
+                if (Input.GetTouch(0).phase == TouchPhase.Began)
+                {
+                    startTouchTime = Time.time;
+                    InstantiateObject(6);
+                }
+                if (Input.GetTouch(0).phase == TouchPhase.Ended && startTouchTime != 0.0f)
+                {
+                    endTouchTime = Time.time;
+                    float deltaTouchTime = endTouchTime - startTouchTime;
+                    
+                }
+            }
         }
     }
 
-    private void PlaceObject()
+    private void PlaceTarget()
     {
-        Instantiate(objectToPlace, placementPose.position, placementPose.rotation);
+        Instantiate(targetToPlace, placementPose.position, placementPose.rotation);
+        targetPlaced = true;
+    }
+
+    private void InstantiateObject(float deltaTouchTime)
+    {
+        Rigidbody newObject = Instantiate(objectToInstantiate, transform.position, transform.rotation);
+        newObject.velocity = Camera.current.transform.forward.normalized * deltaTouchTime;
     }
 
     private void UpdatePlacementIndicator()
@@ -64,11 +96,11 @@ public class TapToPlace : MonoBehaviour
         {
             placementPose = hits[0].pose;
 
-            var cameraForward = Camera.current.transform.up;
+            var cameraUp = Camera.current.transform.up;
             var planeForward = hits[0].pose.up;
 
-            var dotProduct = Vector3.Dot(cameraForward, planeForward);
-            var cameraBearing = (cameraForward - dotProduct*planeForward).normalized;
+            var dotProduct = Vector3.Dot(cameraUp, planeForward);
+            var cameraBearing = (cameraUp - dotProduct*planeForward).normalized;
             placementPose.rotation = Quaternion.LookRotation(cameraBearing, planeForward);
         }
     }
