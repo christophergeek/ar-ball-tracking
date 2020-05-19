@@ -59,7 +59,7 @@ public class TapToPlace : MonoBehaviour
                 startTouch = false;
 
                 float deltaTouchTime = endTouchTime - startTouchTime;
-                InstantiateObject(Math.Min(10.0f, 2+ 3*deltaTouchTime));
+                InstantiateObject(Math.Min(10.0f, 2*deltaTouchTime));
             }
         }
     }
