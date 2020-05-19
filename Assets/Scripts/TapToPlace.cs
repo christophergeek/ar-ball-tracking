@@ -13,6 +13,8 @@ public class TapToPlace : MonoBehaviour
 
     private ARSessionOrigin arOrigin;
     private ARSession arSession;
+    private ARPlaneManager arPlaneManager;
+    private ARPointCloudManager arPointCloudManager;
 
     private Pose placementPose;
     private bool placementPoseValid = false;
@@ -23,11 +25,15 @@ public class TapToPlace : MonoBehaviour
     private bool startTouch = false;
     private float startTouchTime, endTouchTime;
 
+    private bool planesAreVisible = true;
+
     // Start is called before the first frame update
     void Start()
     {
         arOrigin = FindObjectOfType<ARSessionOrigin>();
         arSession = FindObjectOfType<ARSession>();
+        arPlaneManager = FindObjectOfType<ARPlaneManager>();
+        arPointCloudManager = FindObjectOfType<ARPointCloudManager>();
 
         startTouchTime = endTouchTime = 0.0f;
     }
@@ -59,7 +65,7 @@ public class TapToPlace : MonoBehaviour
                 startTouch = false;
 
                 float deltaTouchTime = endTouchTime - startTouchTime;
-                InstantiateObject(Math.Min(10.0f, 2*deltaTouchTime));
+                InstantiateObject(Math.Min(10.0f, 2+ 3*deltaTouchTime));
             }
         }
     }
@@ -68,6 +74,7 @@ public class TapToPlace : MonoBehaviour
     {
         currentTarget = Instantiate(targetToPlace, placementPose.position, placementPose.rotation);
         targetPlaced = true;
+        // PlaneToggle();
     }
 
     private void InstantiateObject(float deltaTouchTime)
@@ -114,5 +121,36 @@ public class TapToPlace : MonoBehaviour
         targetPlaced = false;
         startTouch = false;
         Destroy(currentTarget);
+        // PlaneToggle();
     }
- }
+
+    public void PlaneToggle()
+    {
+        planesAreVisible = !planesAreVisible;
+
+        //disables/enables prefabs for planes found in future
+        arPlaneManager.planePrefab.SetActive(planesAreVisible);
+
+        //disables/enables renderering existing planes
+        foreach (GameObject plane in GameObject.FindGameObjectsWithTag("AR Plane"))
+        {
+            Renderer r = plane.GetComponent<Renderer>();
+            ARPlaneMeshVisualizer t = plane.GetComponent<ARPlaneMeshVisualizer>();
+            r.enabled = planesAreVisible;
+            t.enabled = planesAreVisible;
+        }
+
+        //disables/enables prefabs for points found in future
+        arPointCloudManager.pointCloudPrefab.SetActive(planesAreVisible);
+
+        //disables/enables renderering existing points
+        foreach (GameObject point in GameObject.FindGameObjectsWithTag("AR Points"))
+        {
+            Renderer r = point.GetComponent<Renderer>();
+            ARPointCloudParticleVisualizer t = point.GetComponent<ARPointCloudParticleVisualizer>();
+            r.enabled = planesAreVisible;
+            t.enabled = planesAreVisible;
+        }
+
+    }
+}
