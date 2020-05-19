@@ -16,13 +16,20 @@ public class TapToPlace : MonoBehaviour
 
     private Pose placementPose;
     private bool placementPoseValid = false;
+
+    private GameObject currentTarget;
     private bool targetPlaced = false;
+
+    private bool startTouch = false;
+    private float startTouchTime, endTouchTime;
 
     // Start is called before the first frame update
     void Start()
     {
         arOrigin = FindObjectOfType<ARSessionOrigin>();
         arSession = FindObjectOfType<ARSession>();
+
+        startTouchTime = endTouchTime = 0.0f;
     }
 
     // Update is called once per frame
@@ -40,29 +47,26 @@ public class TapToPlace : MonoBehaviour
         }
         else if (targetPlaced)
         {
-            if (Input.touchCount > 0)
+            if (Input.GetTouch(0).phase == TouchPhase.Began)
             {
-                float startTouchTime, endTouchTime;
-                startTouchTime = endTouchTime = 0.0f;
+                startTouchTime = Time.time;
+                startTouch = true;
+            }
 
-                if (Input.GetTouch(0).phase == TouchPhase.Began)
-                {
-                    startTouchTime = Time.time;
-                    InstantiateObject(6);
-                }
-                if (Input.GetTouch(0).phase == TouchPhase.Ended && startTouchTime != 0.0f)
-                {
-                    endTouchTime = Time.time;
-                    float deltaTouchTime = endTouchTime - startTouchTime;
-                    
-                }
+            if (Input.GetTouch(0).phase == TouchPhase.Ended && startTouch)
+            {
+                endTouchTime = Time.time;
+                startTouch = false;
+
+                float deltaTouchTime = endTouchTime - startTouchTime;
+                InstantiateObject(Math.Min(10.0f, 2*deltaTouchTime));
             }
         }
     }
 
     private void PlaceTarget()
     {
-        Instantiate(targetToPlace, placementPose.position, placementPose.rotation);
+        currentTarget = Instantiate(targetToPlace, placementPose.position, placementPose.rotation);
         targetPlaced = true;
     }
 
@@ -104,4 +108,11 @@ public class TapToPlace : MonoBehaviour
             placementPose.rotation = Quaternion.LookRotation(cameraBearing, planeForward);
         }
     }
-}
+
+    public void ResetTarget()
+    {
+        targetPlaced = false;
+        startTouch = false;
+        Destroy(currentTarget);
+    }
+ }
